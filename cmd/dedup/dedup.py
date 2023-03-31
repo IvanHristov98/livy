@@ -13,7 +13,10 @@ def main():
     im = _load_img(dedup_path, "apples.jpeg")
     transformed_im = _load_img(dedup_path, "apples_transformed.jpg")
 
-    dedup_svc = dedup.SIFTService()
+    extractor = dedup.SIFTExtractor()
+    dup_checker = dedup.BruteForceChecker()
+
+    dedup_svc = dedup.Service(extractor, dup_checker)
     is_duplicate = dedup_svc.is_duplicate(im, transformed_im)
 
     print("images are duplicate:", is_duplicate)

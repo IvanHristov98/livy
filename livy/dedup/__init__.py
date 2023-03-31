@@ -1,2 +1,4 @@
-from livy.dedup.svc import Service # noqa
-from livy.dedup.sift import SIFTService # noqa
+from livy.dedup.service import Service, Extractor, DuplicateChecker # noqa
+from livy.dedup.checker import BruteForceChecker # noqa
+from livy.dedup.feature import SIFTExtractor # noqa
+

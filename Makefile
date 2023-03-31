@@ -12,7 +12,7 @@ install-deps:
 
 .PHONY: run-dedup
 run-dedup:
-	@(cmd/utility/run_in_common_venv.sh "cmd" "dedup.py")
+	@(cmd/utility/run_in_common_venv.sh "cmd" "dedup/dedup.py")
 
 
 define create_venv
