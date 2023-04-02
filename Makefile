@@ -14,6 +14,10 @@ install-deps:
 run:
 	@(cmd/utility/run_in_common_venv.sh "cmd" "dedup/dedup.py")
 
+.PHONY: test-subsystem
+test-subsystem:
+	@(cmd/utility/run_in_common_venv.sh "." "-m" "unittest" "discover" "tests/subsystem")
+
 
 define create_venv
 	@if [ ! -d ".venv" ]; then\
