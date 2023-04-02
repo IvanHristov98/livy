@@ -6,7 +6,7 @@ import cv2 as cv
 
 class BruteForceChecker(service.DuplicateChecker):
     _NEIGHBOUR_THRESH = 0.8
-    _MIN_MATCH_RATIO = 0.3
+    _MIN_MATCH_RATIO = 0.5
 
     def is_duplicate(self, base_desc: np.ndarray, dup_desc: np.ndarray) -> bool:
         bf = cv.BFMatcher(cv.NORM_L2)

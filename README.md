@@ -12,5 +12,5 @@ It covers different use cases such as image deduplication, facial recognition in
 make setup
 
 # Run deduplication command.
-make run-dedup
+make run
 ```

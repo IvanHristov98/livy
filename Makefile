@@ -10,8 +10,8 @@ install-deps:
 	@pip install -r requirements.txt
 
 
-.PHONY: run-dedup
-run-dedup:
+.PHONY: run
+run:
 	@(cmd/utility/run_in_common_venv.sh "cmd" "dedup/dedup.py")
 
 

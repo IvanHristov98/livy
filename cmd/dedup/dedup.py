@@ -14,7 +14,7 @@ def main():
     transformed_im = _load_img(dedup_path, "apples_transformed.jpg")
 
     extractor = dedup.SIFTExtractor()
-    dup_checker = dedup.BruteForceChecker()
+    dup_checker = dedup.EarthMoverChecker()
 
     dedup_svc = dedup.Service(extractor, dup_checker)
     is_duplicate = dedup_svc.is_duplicate(im, transformed_im)
