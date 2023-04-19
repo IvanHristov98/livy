@@ -5,11 +5,14 @@ import os
 import os.path
 import random
 import math
+import time
 
 import numpy as np
 import cv2 as cv
 
 import livy.dedup as dedup
+import livy.model as model
+import livy.id as id
 
 
 class TestDedupService(unittest.TestCase):
@@ -18,35 +21,50 @@ class TestDedupService(unittest.TestCase):
 
     def setUp(self) -> None:
         super().setUp()
+        random.seed(int(time.time()))
+
         self._ims_path = os.environ["COCO_IMS_PATH"]
 
-        extractor = dedup.SIFTExtractor()
-        dup_checker = dedup.BruteForceChecker()
+        # TODO: Make many services.
+        self._svc = self._new_brute_force_svc()
 
-        self._svc = dedup.Service(extractor, dup_checker)
+    def _new_brute_force_svc(self) -> dedup.BruteForceService:
+        extractor = dedup.SIFTExtractor()
+        return dedup.BruteForceService(extractor)
 
     def test_affine_transform_stability(self) -> None:
         ims = self._load_ims()
-        warped_ims = self._warp_affine_ims(ims)
+       
+        for i in range(len(ims)):
+            self._svc.add_im(ims[i])
+
+        sample_size = 100
         success_count = 0
 
-        for i in range(len(ims)):
-            if self._svc.is_duplicate(ims[i], warped_ims[i]):
-                success_count += 1
+        warped_ims = self._warp_affine_ims(ims)
+        
+        for i in range(sample_size):
+            idx = random.randrange(0, len(warped_ims))
+            similar_ims = self._svc.similar_ims(warped_ims[idx], n=5)
 
-        print("success count: ", success_count/len(ims))
+            for similar_im in similar_ims:
+                if similar_im.id == ims[idx].id:
+                    success_count += 1
+                    break
+
+        print("top n success rate: ", success_count/sample_size)
 
     def _warp_affine_ims(
         self, 
-        ims: List[np.ndarray], 
+        ims: List[model.Image], 
         max_angle: float = 45.0, 
         max_offset_ratio: float = 0.1, 
         max_scale_offset: float = 0.5,
-    ) -> List[np.ndarray]:
+    ) -> List[model.Image]:
         warped_ims = [None] * len(ims)
 
         for i in range(0, len(ims)):
-            (h, w) = ims[i].shape[:2]
+            (h, w) = ims[i].mat.shape[:2]
 
             angle = random.uniform(-max_angle, max_angle)
 
@@ -56,8 +74,10 @@ class TestDedupService(unittest.TestCase):
             scalex = 1 + random.uniform(-max_scale_offset, max_scale_offset)
             scaley = 1 + random.uniform(-max_scale_offset, max_scale_offset)
 
-            mat = self._affine_transform_mat(ims[i], angle, (offx, offy), (scalex, scaley))
-            warped_ims[i] = cv.warpAffine(ims[i], mat, (w, h))
+            mat = self._affine_transform_mat(ims[i].mat, angle, (offx, offy), (scalex, scaley))
+            mat = cv.warpAffine(ims[i].mat, mat, (w, h))
+
+            warped_ims[i] = model.Image(id.NewImage(), f"test-{str(i)}", mat)
 
             # if i < 10:
             #     # cv.imshow("image", ims[i])
@@ -98,12 +118,13 @@ class TestDedupService(unittest.TestCase):
         
         return cv.getAffineTransform(in_pts, out_pts)
 
-    def _load_ims(self) -> List[np.ndarray]:
+    def _load_ims(self) -> List[model.Image]:
         paths = self._im_paths()
         ims = [None] * len(paths)
 
         for i in range(0, len(paths)):
-            ims[i] = cv.imread(str(paths[i]))
+            mat = cv.imread(str(paths[i]))
+            ims[i] = model.Image(id.NewImage(), str(i), mat)
 
         return ims
 
