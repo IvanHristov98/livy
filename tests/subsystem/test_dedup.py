@@ -23,7 +23,7 @@ class TestDedupService(unittest.TestCase):
         super().setUp()
         random.seed(int(time.time()))
 
-        self._ims_path = os.environ["COCO_IMS_PATH"]
+        self._ims_path = Path(os.environ["COCO_IMS_PATH"])
 
         # TODO: Make many services.
         self._svc = self._new_brute_force_svc()
@@ -95,7 +95,7 @@ class TestDedupService(unittest.TestCase):
         scales: Tuple[float, float],
     ) -> np.ndarray:
         (h, w) = im.shape[:2]
-        in_pts = np.float32([[0, 0], [w-1, 0], [0, h-1]])
+        in_pts = np.float32([[float(0), float(0)], [float(w-1), float(0)], [float(0), float(h-1)]])
         out_pts = np.zeros_like(in_pts)
 
         for i in range(0, len(in_pts)):
@@ -131,7 +131,7 @@ class TestDedupService(unittest.TestCase):
     def _im_paths(self) -> List[Path]:
         paths = []
         
-        for name in os.listdir(self._ims_path):
+        for name in os.listdir(str(self._ims_path)):
             if len(paths) > 100:
                 break
 

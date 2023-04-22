@@ -1,5 +1,6 @@
-import numpy as np
 import livy.id as id
+
+import numpy as np
 
 from typing import NamedTuple
 
