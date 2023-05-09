@@ -23,7 +23,7 @@ class TestDedupService(unittest.TestCase):
         super().setUp()
         random.seed(int(time.time()))
 
-        self._ims_path = Path(os.environ["COCO_IMS_PATH"])
+        self._ims_path = Path(os.environ["IMS_PATH"])
 
         # TODO: Make many services.
         self._svc = self._new_brute_force_svc()

@@ -3,4 +3,7 @@ from livy.dedup.service import (
     Extractor, # noqa
     BruteForceService, # noqa
 )
-from livy.dedup.feature import SIFTExtractor# noqa
+from livy.dedup.feature import (
+    SIFTExtractor, # noqa
+    SpinImageExtractor, # noqa
+)

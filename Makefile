@@ -18,6 +18,9 @@ run:
 test-subsystem:
 	@(cmd/utility/run_in_common_venv.sh "." "-m" "unittest" "discover" "tests/subsystem")
 
+.PHONY: test-unit
+test-unit:
+	@(cmd/utility/run_in_common_venv.sh "." "-m" "unittest" "discover" "tests/unit")
 
 define create_venv
 	@if [ ! -d ".venv" ]; then\

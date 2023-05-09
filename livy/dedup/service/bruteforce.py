@@ -32,7 +32,7 @@ class BruteForceService(service.Service):
         return self._store[id]
 
     def similar_ims(self, im: model.Image, n: int) -> List[id.Image]:
-        _, descriptor = self._extractor.features(im.mat)
+        descriptor = self._extractor.features(im.mat)
         
         class Score(NamedTuple):
             id: id.Image

@@ -9,8 +9,8 @@ import livy.model as model
 
 
 class Extractor(abc.ABC):
-    # features returns a tuple keypoints and a descriptor for an image.
-    def features(self, im: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    # features returns a descriptor for an image.
+    def features(self, im: np.ndarray) -> np.ndarray:
         raise NotImplementedError("descriptor is not implemented")
 
 
