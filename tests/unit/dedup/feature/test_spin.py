@@ -17,7 +17,11 @@ class TestSpinImageExtractor(unittest.TestCase):
 
     def test_normalisation(self) -> None:
         im = self._sample_im()
-        self._extractor.features(im)
+        features = self._extractor.features(im)
+
+        feature_cnt, dim_cnt = features.shape
+        self.assertGreaterEqual(feature_cnt, 1)
+        self.assertEqual(dim_cnt, 20*20)
 
     def _sample_im(self) -> np.ndarray:
         return cv.imread(str(self._sample_im_path()))

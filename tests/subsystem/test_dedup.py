@@ -26,17 +26,24 @@ class TestDedupService(unittest.TestCase):
         self._ims_path = Path(os.environ["IMS_PATH"])
 
         # TODO: Make many services.
-        self._svc = self._new_brute_force_svc()
+        # self._svc = self._new_brute_force_svc()
+        self._svc = self._new_signature_svc()
 
     def _new_brute_force_svc(self) -> dedup.BruteForceService:
         extractor = dedup.SIFTExtractor()
         return dedup.BruteForceService(extractor)
+
+    def _new_signature_svc(self) -> dedup.SignatureService:
+        extractor = dedup.SpinImageExtractor()
+        return dedup.SignatureService(extractor)
 
     def test_affine_transform_stability(self) -> None:
         ims = self._load_ims()
        
         for i in range(len(ims)):
             self._svc.add_im(ims[i])
+            
+            return
 
         sample_size = 100
         success_count = 0

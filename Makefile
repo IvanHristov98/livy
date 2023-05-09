@@ -9,7 +9,6 @@ create-venv:
 install-deps:
 	@pip install -r requirements.txt
 
-
 .PHONY: run
 run:
 	@(cmd/utility/run_in_common_venv.sh "cmd" "dedup/dedup.py")

@@ -13,13 +13,14 @@ class SpinImageExtractor(service.Extractor):
     _sift: cv.SIFT
 
     def __init__(self, spin_im_dims: int = 20) -> None:
-        self._spin_im_dims = 20
+        self._spin_im_dims = spin_im_dims
         self._sift = cv.SIFT_create()
 
     # TODO: Experiment with other feature extractors.
     def features(self, im: np.ndarray) -> np.ndarray:
         im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
         keypoints, _ = self._sift.detectAndCompute(im_gray, None)
+        features = []
 
         for i in range(len(keypoints)):
             # pt is returned in (x, y) order
@@ -35,17 +36,16 @@ class SpinImageExtractor(service.Extractor):
                 continue
 
             spin_im = self._spin_im(blob, (blob_radius, blob_radius), blob_radius)
+            features.append(spin_im.flatten())
 
-            cv.imshow("spin_im", spin_im)
-            cv.imshow("blob", blob)
-
+            # cv.imshow("spin_im", (spin_im).astype(np.uint8))
+            # cv.imshow("blob", blob)
             # cv.waitKey(delay=0)
-
             # if i > 10:
             #     break
 
-
-        im = cv.drawKeypoints(im_gray, keypoints, im, flags=cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+        # im = cv.drawKeypoints(im_gray, keypoints, im, flags=cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+        return np.asarray(features, dtype=np.float32)
 
     # fit_blob resizes the blob so that feature extraction could work faster.
     def _fit_blob(self, im: np.ndarray, pt_fl: Tuple[float, float], radius_fl: float) -> np.ndarray:
