@@ -6,6 +6,7 @@ hdbscan==0.8.29
 joblib==1.2.0
 kiwisolver==1.4.4
 matplotlib==3.6.2
+networkx==3.1
 numpy==1.23.5
 opencv-contrib-python==4.6.0.66
 opencv-python==4.6.0.66

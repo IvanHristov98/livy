@@ -43,7 +43,9 @@ class TestDedupService(unittest.TestCase):
         for i in range(len(ims)):
             self._svc.add_im(ims[i])
             
-            return
+            if i > 2:
+                print("loaded images")
+                break
 
         sample_size = 100
         success_count = 0
@@ -58,6 +60,8 @@ class TestDedupService(unittest.TestCase):
                 if similar_im.id == ims[idx].id:
                     success_count += 1
                     break
+
+            break
 
         print("top n success rate: ", success_count/sample_size)
 

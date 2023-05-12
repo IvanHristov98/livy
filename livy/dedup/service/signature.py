@@ -1,4 +1,4 @@
-from typing import List, NamedTuple, Dict, Set
+from typing import List, NamedTuple, Dict, Set, Tuple
 import math
 
 import hdbscan
@@ -37,15 +37,22 @@ class Graph(NamedTuple):
 
 class SpanningTreeNode:
     idx: int
-    children: List['SpanningTreeNode']
+    # The int corresponds to the edge index in the graph.
+    children: List[Tuple[int, 'SpanningTreeNode']]
 
     def __init__(self, idx: int, children: List['SpanningTreeNode']) -> None:
         self.idx = idx
         self.children = children
 
 
+class FlowEdge(NamedTuple):
+    origin: int
+    dest: int
+    val: int
+
+
 class SignatureService(service.Service):
-    ROOT_IDX = 0
+    SRC_IDX = 0
 
     # Hyper-parameters.
     _min_cluster_size: int
@@ -147,15 +154,7 @@ class SignatureService(service.Service):
     # The number of credits in the supplier signature should be equal ot those in the consumer signature.
     def _build_graph(self, supplier: List[WeightedMedoid], consumer: List[WeightedMedoid]) -> Graph:
         graph = Graph(adj_list=[], nodes=[])
-
-        # In order to apply the network simplex algorithm a dummy root is needed.
-        # The simplex algorithm basis is represented through a spanning tree and
-        # a bipartite graph with edges only in one direction has no spanning tree.
-        root = Node(resource=0)
-        graph.adj_list.append([])
-        graph.nodes.append(root)
-
-        count = 1
+        idx = 1
 
         # Number of clusters is usually small (e.g. 10).
         # Hence number of iterations is around 5 * 400 = 2000 nodes.
@@ -163,12 +162,7 @@ class SignatureService(service.Service):
             graph.adj_list.append([])
             graph.nodes.append(Node(resource=medoid.weight))
 
-            # Connect to root.
-            graph.adj_list[self.ROOT_IDX].append(Edge(to=count, strong=True, cost=0))
-            # Achieving weak connectivity.
-            graph.adj_list[count].append(Edge(to=self.ROOT_IDX, strong=False, cost=0))
-
-            count += 1
+            idx += 1
 
         for i in range(len(consumer)):
             consumer_medoid = consumer[i]
@@ -179,12 +173,11 @@ class SignatureService(service.Service):
             for j in range(len(supplier)):
                 supplier_medoid = supplier[j]
 
-                # +1 is added because the first node is the root.
                 dist = linalg.norm(supplier_medoid.medoid - consumer_medoid.medoid)
-                graph.adj_list[j+1].append(Edge(to=count, strong=True, cost=dist))
-                graph.adj_list[count].append(Edge(to=j+1, strong=False, cost=-dist))
+                graph.adj_list[j].append(Edge(to=idx, strong=True, cost=dist))
+                graph.adj_list[idx].append(Edge(to=j, strong=False, cost=dist))
 
-            count += 1
+            idx += 1
 
         return graph
 
@@ -195,18 +188,45 @@ class SignatureService(service.Service):
         def _aux_spanning_tree(node: SpanningTreeNode, visited: Set[int]) -> None:
             neighbours = graph.adj_list[node.idx]
 
-            for neighbour_edge in neighbours:
+            for i in range(len(neighbours)):
+                neighbour_edge = neighbours[i]
                 if neighbour_edge.to in visited:
                     continue
 
                 child_node = SpanningTreeNode(idx=neighbour_edge.to, children=[])
-                node.children.append(child_node)
+                node.children.append((i, child_node))
 
                 visited.add(child_node.idx)
                 _aux_spanning_tree(child_node, visited)
 
-        root = SpanningTreeNode(idx=self.ROOT_IDX, children=[])
-        visited = set([self.ROOT_IDX])
+        root = SpanningTreeNode(idx=self.SRC_IDX, children=[])
+        visited = set([self.SRC_IDX])
 
         _aux_spanning_tree(root, visited)
         return root
+
+    def _assign_flow_values(self, graph: Graph, root: SpanningTreeNode) -> Set[FlowEdge]:
+        flows = set([])
+
+        def _aux_assign_flow_values(node: SpanningTreeNode) -> int:
+            if len(node.children) == 0:
+                # Return required resource.
+                return graph.nodes[node.idx]
+
+            supplied = 0.0
+
+            for (edge_idx, node) in node.children:
+                # E.g. a child node v has resource -5.
+                resource = _aux_assign_flow_values(node)
+                edge = graph.adj_list[node.idx][edge_idx]
+
+                # And the edge is going into v from the current node u.
+                if edge.strong:
+                    # then u sends some of its resource.
+                    supplied -= resource
+                # and the edge is going from v into u.
+                else:
+                    # then imaginarily u sends some of its resource in an opposite direction.
+                    supplied += resource
+                
+            return graph.nodes[node.idx] - supplied

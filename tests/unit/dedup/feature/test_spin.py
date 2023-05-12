@@ -1,7 +1,6 @@
 import unittest
 from pathlib import Path
 import os
-import uuid
 
 import cv2 as cv
 import numpy as np
