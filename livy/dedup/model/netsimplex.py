@@ -77,6 +77,8 @@ def spanning_tree(graph: Graph) -> SpanningTreeNode:
     return root
 
 
+# FlowEdge contains the flow that is sent along an edge in the spanning tree.
+# Values are set with regard to the direction of graph edges.
 class FlowEdge(NamedTuple):
     dest: int
     val: int
@@ -90,7 +92,7 @@ def assign_flow_values(graph: Graph, root: SpanningTreeNode) -> Dict[int, List[F
             # Return required resource.
             return graph.nodes[node.idx].resource
 
-        supplied = 0.0
+        supply = graph.nodes[node.idx].resource
         flows[node.idx] = []
 
         for edge in node.children:
@@ -102,16 +104,16 @@ def assign_flow_values(graph: Graph, root: SpanningTreeNode) -> Dict[int, List[F
             if graph_edge.strong:
                 # then u sends some of its resource.
                 flows[node.idx].append(FlowEdge(dest=edge.to.idx, val=-resource))
-                supplied -= resource
             # and the edge is going from v into u.
             else:
-                # TODO:
-                pass
-                # then imaginarily u sends some of its resource in an opposite direction.
-                # flows[node.idx].append(FlowEdge(dest=edge.to.idx, val=resource))
-                # supplied += resource
+                flows[node.idx].append(FlowEdge(dest=edge.to.idx, val=resource))
 
-        return graph.nodes[node.idx].resource - supplied
+            supply += resource
+
+        return supply
 
     _aux_assign_flow_values(root)
     return flows
+
+
+# TODO: Raise exception on negative balance.
