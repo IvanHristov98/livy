@@ -19,7 +19,7 @@ class TestSpanningTree(unittest.TestCase):
         self.assertEqual(root.children, [])
 
     def test_unidirectional_bipartite_graph(self) -> None:
-        self._graph = foo_graph()
+        self._graph = bipartite_unidirectional_graph()
 
         root = model.spanning_tree(self._graph)
 
@@ -45,7 +45,7 @@ class TestAssignFlowValues(unittest.TestCase):
     _root: model.SpanningTreeNode
 
     def setUp(self) -> None:
-        self._graph = foo_graph()
+        self._graph = bipartite_unidirectional_graph()
         self._root = model.SpanningTreeNode(idx=0, children=[])
 
     def test_strong_edge_to_demanding_node(self) -> None:
@@ -95,37 +95,10 @@ class TestAssignFlowValues(unittest.TestCase):
         self.assertIn(model.FlowEdge(dest=0, val=1), flows[3])
 
     def test_resource_subtraction(self) -> None:
-        graph = model.Graph()
+        graph = infeasible_balanced_graph()
+        root = infeasible_graph_full_spanning_tree()
 
-        graph.add_node(0, resource=1)
-        graph.add_node(1, resource=-3)
-        graph.add_node(2, resource=-3)
-        graph.add_node(3, resource=-5)
-        graph.add_node(4, resource=7)
-        graph.add_node(5, resource=3)
-
-        # Weights don't matter in flow assignment.
-        graph.add_edge(2, 0, cost=1)
-        graph.add_edge(2, 1, cost=5)
-        graph.add_edge(2, 3, cost=1)
-        graph.add_edge(4, 3, cost=8)
-        graph.add_edge(5, 4, cost=1)
-
-        # Build spanning tree.
-        node0 = model.SpanningTreeNode(0, children=[])
-        node1 = model.SpanningTreeNode(1, children=[])
-        node2 = model.SpanningTreeNode(2, children=[])
-        node3 = model.SpanningTreeNode(3, children=[])
-        node4 = model.SpanningTreeNode(4, children=[])
-        node5 = model.SpanningTreeNode(5, children=[])
-
-        node5.children.append(model.SpanningTreeEdge(to=node3, edge_idx=0))
-        node3.children.append(model.SpanningTreeEdge(to=node4, edge_idx=1))
-        node3.children.append(model.SpanningTreeEdge(to=node2, edge_idx=0))
-        node2.children.append(model.SpanningTreeEdge(to=node0, edge_idx=0))
-        node2.children.append(model.SpanningTreeEdge(to=node1, edge_idx=1))
-
-        flows = model.assign_flow_values(graph, node5)
+        flows = model.assign_flow_values(graph, root)
 
         self.assertIn(2, flows)
         self.assertIn(model.FlowEdge(dest=0, val=-1), flows[2])
@@ -139,7 +112,38 @@ class TestAssignFlowValues(unittest.TestCase):
         self.assertIn(model.FlowEdge(dest=3, val=3), flows[5])
 
 
-def foo_graph() -> model.Graph:
+class TestAssignDualVariables(unittest.TestCase):
+    _graph: model.Graph
+
+    def setUp(self) -> None:
+        self._graph = infeasible_balanced_graph()
+
+    def test_single_node_spanning_tree(self) -> None:
+        node5 = model.SpanningTreeNode(idx=5, children=[])
+        dual_vars = model.assign_dual_variables(self._graph, node5)
+
+        self._assert_dual_var(dual_vars, expected_idx=5, expected_val=0)
+
+    def test_full_spanning_tree(self) -> None:
+        root = infeasible_graph_full_spanning_tree()
+        dual_vars = model.assign_dual_variables(self._graph, root)
+
+        # Comparison with almost equal is necessary because we're working with floats.
+        self._assert_dual_var(dual_vars, expected_idx=5, expected_val=0)
+        self._assert_dual_var(dual_vars, expected_idx=3, expected_val=1)
+        self._assert_dual_var(dual_vars, expected_idx=4, expected_val=-7)
+        self._assert_dual_var(dual_vars, expected_idx=2, expected_val=-1)
+        self._assert_dual_var(dual_vars, expected_idx=0, expected_val=0)
+        self._assert_dual_var(dual_vars, expected_idx=1, expected_val=4)
+
+    def _assert_dual_var(self, dual_vars: Dict[int, float], expected_idx: int, expected_val: float) -> None:
+        EPS = 0.000001
+
+        self.assertIn(expected_idx, dual_vars)
+        self.assertAlmostEqual(dual_vars[expected_idx], expected_val, delta=EPS)
+
+
+def bipartite_unidirectional_graph() -> model.Graph:
     graph = model.Graph()
 
     graph.add_node(0, 1)
@@ -157,3 +161,40 @@ def foo_graph() -> model.Graph:
     graph.add_edge(2, 4, cost=1)
 
     return graph
+
+
+def infeasible_balanced_graph() -> model.Graph:
+    graph = model.Graph()
+
+    graph.add_node(0, resource=1)
+    graph.add_node(1, resource=-3)
+    graph.add_node(2, resource=-3)
+    graph.add_node(3, resource=-5)
+    graph.add_node(4, resource=7)
+    graph.add_node(5, resource=3)
+
+    # Weights don't matter in flow assignment.
+    graph.add_edge(2, 0, cost=1)
+    graph.add_edge(2, 1, cost=5)
+    graph.add_edge(2, 3, cost=2)
+    graph.add_edge(4, 3, cost=8)
+    graph.add_edge(5, 3, cost=1)
+
+    return graph
+
+def infeasible_graph_full_spanning_tree() -> model.SpanningTreeNode:
+    # Build spanning tree.
+    node0 = model.SpanningTreeNode(0, children=[])
+    node1 = model.SpanningTreeNode(1, children=[])
+    node2 = model.SpanningTreeNode(2, children=[])
+    node3 = model.SpanningTreeNode(3, children=[])
+    node4 = model.SpanningTreeNode(4, children=[])
+    node5 = model.SpanningTreeNode(5, children=[])
+
+    node5.children.append(model.SpanningTreeEdge(to=node3, edge_idx=0))
+    node3.children.append(model.SpanningTreeEdge(to=node4, edge_idx=1))
+    node3.children.append(model.SpanningTreeEdge(to=node2, edge_idx=0))
+    node2.children.append(model.SpanningTreeEdge(to=node0, edge_idx=0))
+    node2.children.append(model.SpanningTreeEdge(to=node1, edge_idx=1))
+
+    return node5

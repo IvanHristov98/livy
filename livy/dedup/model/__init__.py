@@ -7,4 +7,5 @@ from livy.dedup.model.netsimplex import (
     SpanningTreeEdge,
     FlowEdge,
     assign_flow_values,
+    assign_dual_variables,
 )

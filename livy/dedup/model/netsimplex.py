@@ -117,3 +117,21 @@ def assign_flow_values(graph: Graph, root: SpanningTreeNode) -> Dict[int, List[F
 
 
 # TODO: Raise exception on negative balance.
+
+
+def assign_dual_variables(graph: Graph, root: SpanningTreeNode) -> Dict[int, float]:
+    dual_vars = dict()
+
+    def _aux_assign_dual_variables(node: SpanningTreeNode, offset: float) -> None:
+        dual_vars[node.idx] = offset
+
+        for edge in node.children:
+            graph_edge = graph.adj_list[node.idx][edge.edge_idx]
+
+            if graph_edge.strong:
+                _aux_assign_dual_variables(edge.to, offset + graph_edge.cost)
+            else:
+                _aux_assign_dual_variables(edge.to, offset - graph_edge.cost)            
+
+    _aux_assign_dual_variables(root, 0)
+    return dual_vars
