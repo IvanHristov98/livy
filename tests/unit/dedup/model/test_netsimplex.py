@@ -143,6 +143,36 @@ class TestAssignDualVariables(unittest.TestCase):
         self.assertAlmostEqual(dual_vars[expected_idx], expected_val, delta=EPS)
 
 
+class TestFindSlackVariables(unittest.TestCase):
+    def test_with_letter_shaped_graph(self) -> None:
+        graph = letter_shape_graph()
+        # Define dual variables.
+        dual_vars = {0: 0, 1: 2, 2: 3, 3: 9, 4: 11, 5: 5}
+
+        slack_vars = model.find_slack_variables(graph, dual_vars)
+
+        self._assert_contains_slack_edge(slack_vars, origin=4, expected_edge=model.SlackEdge(dest=1, val=16))
+        self._assert_contains_slack_edge(slack_vars, origin=2, expected_edge=model.SlackEdge(dest=3, val=-5))
+        self._assert_contains_slack_edge(slack_vars, origin=2, expected_edge=model.SlackEdge(dest=5, val=7))
+        self._assert_contains_slack_edge(slack_vars, origin=5, expected_edge=model.SlackEdge(dest=4, val=-4))
+
+    def _assert_contains_slack_edge(
+            self, 
+            slack_vars: Dict[int, List[model.SlackEdge]], 
+            origin: int, 
+            expected_edge: model.SlackEdge,
+        ) -> None:
+        EPS = 0.000001
+        self.assertIn(origin, slack_vars)
+
+        for slack_var in slack_vars[origin]:
+            if slack_var.dest == expected_edge.dest:
+                self.assertAlmostEqual(slack_var.val, expected_edge.val, delta=EPS)
+                return
+
+        self.assertTrue(False, msg=f"slack edge not found for origin {origin} in slack vars {slack_vars}")
+
+
 def bipartite_unidirectional_graph() -> model.Graph:
     graph = model.Graph()
 
@@ -182,6 +212,7 @@ def infeasible_balanced_graph() -> model.Graph:
 
     return graph
 
+
 def infeasible_graph_full_spanning_tree() -> model.SpanningTreeNode:
     # Build spanning tree.
     node0 = model.SpanningTreeNode(0, children=[])
@@ -198,3 +229,26 @@ def infeasible_graph_full_spanning_tree() -> model.SpanningTreeNode:
     node2.children.append(model.SpanningTreeEdge(to=node1, edge_idx=1))
 
     return node5
+
+
+def letter_shape_graph() -> model.Graph:
+    graph = model.Graph()
+
+    graph.add_node(0, resource=4)
+    graph.add_node(1, resource=0)
+    graph.add_node(2, resource=-2)
+    graph.add_node(3, resource=3)
+    graph.add_node(4, resource=-8)
+    graph.add_node(5, resource=3)
+
+    graph.add_edge(origin=0, dest=1, cost=2)
+    graph.add_edge(origin=0, dest=2, cost=3)
+    graph.add_edge(origin=1, dest=3, cost=7)
+    graph.add_edge(origin=2, dest=3, cost=1)
+    graph.add_edge(origin=3, dest=4, cost=2)
+    graph.add_edge(origin=5, dest=3, cost=4)
+    graph.add_edge(origin=4, dest=1, cost=7)
+    graph.add_edge(origin=2, dest=5, cost=9)
+    graph.add_edge(origin=5, dest=4, cost=2)
+
+    return graph

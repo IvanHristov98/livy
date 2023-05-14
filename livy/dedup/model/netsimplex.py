@@ -135,3 +135,31 @@ def assign_dual_variables(graph: Graph, root: SpanningTreeNode) -> Dict[int, flo
 
     _aux_assign_dual_variables(root, 0)
     return dual_vars
+
+
+class SlackEdge(NamedTuple):
+    dest: int
+    val: int
+
+
+def find_slack_variables(graph: Graph, dual_vars: Dict[int, float]) -> Dict[int, List[SlackEdge]]:
+    EPS = 0.0000000001
+    slack_vars = dict()
+
+    for node_idx in graph.adj_list.keys():
+        edges = graph.adj_list[node_idx]
+
+        for edge in edges:
+            if not edge.strong:
+                continue
+
+            slack_val = edge.cost + dual_vars[node_idx] - dual_vars[edge.to]
+
+            # We're working with floats.
+            if abs(slack_val) > EPS:
+                if node_idx not in slack_vars:
+                    slack_vars[node_idx] = []
+
+                slack_vars[node_idx].append(SlackEdge(dest=edge.to, val=slack_val))
+
+    return slack_vars

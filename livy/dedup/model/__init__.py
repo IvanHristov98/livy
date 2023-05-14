@@ -8,4 +8,6 @@ from livy.dedup.model.netsimplex import (
     FlowEdge,
     assign_flow_values,
     assign_dual_variables,
+    SlackEdge,
+    find_slack_variables,
 )
