@@ -10,4 +10,6 @@ from livy.dedup.model.netsimplex import (
     assign_dual_variables,
     SlackEdge,
     find_slack_variables,
+    SimplexState,
+    dual_pivot,
 )

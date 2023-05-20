@@ -29,15 +29,7 @@ class TestSpanningTree(unittest.TestCase):
         node3 = model.SpanningTreeNode(idx=3, children=[model.SpanningTreeEdge(to=node1, edge_idx=0)])
         expected_root = model.SpanningTreeNode(idx=0, children=[model.SpanningTreeEdge(to=node3, edge_idx=0)])
 
-        self._assert_spanning_trees(root, expected_root)
-
-    def _assert_spanning_trees(self, root: model.SpanningTreeNode, other_root: model.SpanningTreeNode) -> None:
-        self.assertEqual(root.idx, other_root.idx)
-        self.assertEqual(len(root.children), len(other_root.children))
-
-        for i in range(len(root.children)):
-            self.assertEqual(root.children[i].edge_idx, other_root.children[i].edge_idx)
-            self._assert_spanning_trees(root.children[i].to, other_root.children[i].to)
+        assert_spanning_trees(self, root, expected_root)
 
 
 class TestAssignFlowValues(unittest.TestCase):
@@ -171,6 +163,86 @@ class TestFindSlackVariables(unittest.TestCase):
                 return
 
         self.assertTrue(False, msg=f"slack edge not found for origin {origin} in slack vars {slack_vars}")
+
+
+class TestDualPivot(unittest.TestCase):
+    def test_dual_pivot_on_bounded_graph(self) -> None:
+        # See https://www.youtube.com/watch?v=ife2d0p4dug&t=620s.
+        # Build graph.
+        graph = model.Graph()
+        # Add nodes from `a` to `h`.
+        graph.add_node(0, resource=-4) # a
+        graph.add_node(1, resource=5) # b
+        graph.add_node(2, resource=1) # c
+        graph.add_node(3, resource=1) # d
+        graph.add_node(4, resource=2) # e
+        graph.add_node(5, resource=0) # f
+        graph.add_node(6, resource=3) # g
+        graph.add_node(7, resource=2) # h
+
+        # left side
+        graph.add_edge(origin=0, dest=1, cost=2)
+        graph.add_edge(origin=1, dest=2, cost=3)
+        # top x
+        graph.add_edge(origin=2, dest=4, cost=1)
+        graph.add_edge(origin=4, dest=1, cost=3)
+        graph.add_edge(origin=7, dest=4, cost=13)
+        graph.add_edge(origin=6, dest=4, cost=10)
+        # bot x
+        graph.add_edge(origin=3, dest=1, cost=2)
+        graph.add_edge(origin=3, dest=0, cost=4)
+        graph.add_edge(origin=3, dest=6, cost=7)
+        graph.add_edge(origin=5, dest=3, cost=5)
+        # bot side
+        graph.add_edge(origin=0, dest=5, cost=12)
+        # right side
+        graph.add_edge(origin=7, dest=6, cost=1)
+        graph.add_edge(origin=6, dest=5, cost=2)
+        # top side
+        graph.add_edge(origin=2, dest=7, cost=10)
+
+        # Build spanning tree that is dual feasible.
+        nodes : List[model.SpanningTreeNode] = [None] * 8
+        for i in range(0, 8):
+            nodes[i] = model.SpanningTreeNode(idx=i, children=[])
+
+        nodes[0].children.append(model.SpanningTreeEdge(to=nodes[1], edge_idx=0))
+        nodes[1].children.append(model.SpanningTreeEdge(to=nodes[2], edge_idx=1))
+        nodes[1].children.append(model.SpanningTreeEdge(to=nodes[3], edge_idx=3))
+        nodes[2].children.append(model.SpanningTreeEdge(to=nodes[4], edge_idx=1))
+        nodes[3].children.append(model.SpanningTreeEdge(to=nodes[6], edge_idx=2))
+        nodes[6].children.append(model.SpanningTreeEdge(to=nodes[7], edge_idx=2))
+        nodes[6].children.append(model.SpanningTreeEdge(to=nodes[5], edge_idx=3))
+
+        state = model.dual_pivot(graph, nodes[0])
+
+        # Assert optimal spanning tree.
+        expected_nodes : List[model.SpanningTreeNode] = [None] * 8
+        for i in range(0, 8):
+            expected_nodes[i] = model.SpanningTreeNode(idx=i, children=[])
+
+        expected_nodes[0].children.append(model.SpanningTreeEdge(to=expected_nodes[3], edge_idx=1))
+        expected_nodes[3].children.append(model.SpanningTreeEdge(to=expected_nodes[5], edge_idx=3))
+        expected_nodes[5].children.append(model.SpanningTreeEdge(to=expected_nodes[6], edge_idx=2))
+        expected_nodes[6].children.append(model.SpanningTreeEdge(to=expected_nodes[7], edge_idx=2))
+        expected_nodes[7].children.append(model.SpanningTreeEdge(to=expected_nodes[2], edge_idx=2))
+        expected_nodes[2].children.append(model.SpanningTreeEdge(to=expected_nodes[1], edge_idx=0))
+        expected_nodes[1].children.append(model.SpanningTreeEdge(to=expected_nodes[4], edge_idx=2))
+
+        assert_spanning_trees(self, state.root, expected_nodes[0])
+
+
+def assert_spanning_trees(
+    case: unittest.TestCase, 
+    root: model.SpanningTreeNode, 
+    other_root: model.SpanningTreeNode,
+) -> None:
+    case.assertEqual(root.idx, other_root.idx)
+    case.assertEqual(len(root.children), len(other_root.children))
+
+    for i in range(len(root.children)):
+        case.assertEqual(root.children[i].edge_idx, other_root.children[i].edge_idx)
+        assert_spanning_trees(case, root.children[i].to, other_root.children[i].to)
 
 
 def bipartite_unidirectional_graph() -> model.Graph:
