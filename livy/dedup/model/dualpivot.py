@@ -1,199 +1,16 @@
-from typing import NamedTuple, List, Dict, Set, Tuple
-from queue import PriorityQueue
-from dataclasses import dataclass, field
+from typing import List, Dict, Set, Tuple
+
+from livy.dedup.model.graph import Graph, Edge
+from livy.dedup.model.spanningtree import SpanningTreeNode, SpanningTreeEdge
+from livy.dedup.model.flow import assign_flow_values, FlowEdge
+from livy.dedup.model.dual import assign_dual_variables, find_slack_variables, SlackEdge
+from livy.dedup.model.state import SimplexState
 
 
-_SRC_IDX = 0
-
-
-class Node(NamedTuple):
-    resource: int
-
-
-class Edge(NamedTuple):
-    to: int
-    # The graph should be directed and weakly connected.
-    # This is a helper field that says whether an edge is present only in the directed graph.
-    strong: bool
-    cost: int
-
-
-class Graph:
-    # Invariant states that the number of adj_lists is equal to the number of nodes.
-    adj_list: Dict[int, List[Edge]]
-    nodes: Dict[int, Node]
-
-    def __init__(self) -> None:
-        self.adj_list = dict()
-        self.nodes = dict()
-
-    def add_node(self, idx: int, resource: int) -> None:
-        self.adj_list[idx] = []
-        self.nodes[idx] = Node(resource=resource)
-
-    def add_edge(self, origin: int, dest: int, cost: float) -> None:
-        self.adj_list[origin].append(Edge(to=dest, strong=True, cost=cost))
-        # Required for weak connectivity.
-        self.adj_list[dest].append(Edge(to=origin, strong=False, cost=cost))
-
-
-class SpanningTreeEdge:
-    to: 'SpanningTreeNode'
-    # The index corresponds to the edge index in the graph.
-    # Allows quick lookup.
-    edge_idx: int
-
-    def __init__(self, to: 'SpanningTreeNode', edge_idx: int) -> None:
-        self.to = to
-        self.edge_idx = edge_idx
-
-
-class SpanningTreeNode:
-    idx: int
-    children: List[SpanningTreeEdge]
-
-    def __init__(self, idx: int, children: List[SpanningTreeEdge]) -> None:
-        self.idx = idx
-        self.children = children
-
-
-def spanning_tree(graph: Graph) -> SpanningTreeNode:
-    def _aux_spanning_tree(node: SpanningTreeNode, visited: Set[int]) -> None:
-        neighbours = graph.adj_list[node.idx]
-
-        for i in range(len(neighbours)):
-            neighbour_edge = neighbours[i]
-            if neighbour_edge.to in visited:
-                continue
-
-            child_node = SpanningTreeNode(idx=neighbour_edge.to, children=[])
-            node.children.append(SpanningTreeEdge(to=child_node, edge_idx=0))
-
-            visited.add(child_node.idx)
-            _aux_spanning_tree(child_node, visited)
-
-    root = SpanningTreeNode(idx=_SRC_IDX, children=[])
-    visited = set([_SRC_IDX])
-
-    _aux_spanning_tree(root, visited)
-    return root
-
-
-# FlowEdge contains the flow that is sent along an edge in the spanning tree.
-# Values are set with regard to the direction of graph edges.
-class FlowEdge(NamedTuple):
-    dest: int
-    val: int
-
-
-def assign_flow_values(graph: Graph, root: SpanningTreeNode) -> Dict[int, List[FlowEdge]]:
-    flows = dict()
-
-    def _aux_assign_flow_values(node: SpanningTreeNode) -> int:
-        if len(node.children) == 0:
-            # Return required resource.
-            return graph.nodes[node.idx].resource
-
-        supply = graph.nodes[node.idx].resource
-        flows[node.idx] = []
-
-        for edge in node.children:
-            # E.g. a child node v has resource -5.
-            resource = _aux_assign_flow_values(edge.to)
-            graph_edge = graph.adj_list[node.idx][edge.edge_idx]
-
-            # And the edge is going into v from the current node u.
-            if graph_edge.strong:
-                # then u sends some of its resource.
-                flows[node.idx].append(FlowEdge(dest=edge.to.idx, val=-resource))
-            # and the edge is going from v into u.
-            else:
-                flows[node.idx].append(FlowEdge(dest=edge.to.idx, val=resource))
-
-            supply += resource
-
-        return supply
-
-    _aux_assign_flow_values(root)
-    return flows
-
-
-# TODO: Raise exception on negative balance.
-
-
-def assign_dual_variables(graph: Graph, root: SpanningTreeNode) -> Dict[int, float]:
-    dual_vars = dict()
-
-    def _aux_assign_dual_variables(node: SpanningTreeNode, offset: float) -> None:
-        dual_vars[node.idx] = offset
-
-        for edge in node.children:
-            graph_edge = graph.adj_list[node.idx][edge.edge_idx]
-
-            if graph_edge.strong:
-                _aux_assign_dual_variables(edge.to, offset + graph_edge.cost)
-            else:
-                _aux_assign_dual_variables(edge.to, offset - graph_edge.cost)            
-
-    _aux_assign_dual_variables(root, 0)
-    return dual_vars
-
-
-class SlackEdge:
-    dest: int
-    val: float
-
-    def __init__(self, dest: int, val: float) -> None:
-        self.dest = dest
-        self.val = val
-
-
-def find_slack_variables(graph: Graph, dual_vars: Dict[int, float]) -> Dict[int, List[SlackEdge]]:
-    EPS = 0.0000000001
-    slack_vars = dict()
-
-    for node_idx in graph.adj_list.keys():
-        if node_idx not in slack_vars:
-            slack_vars[node_idx] = []
-
-        edges = graph.adj_list[node_idx]
-
-        for edge in edges:
-            if not edge.strong:
-                continue
-
-            slack_val = edge.cost + dual_vars[node_idx] - dual_vars[edge.to]
-
-            # We're working with floats.
-            if abs(slack_val) > EPS:
-                slack_vars[node_idx].append(SlackEdge(dest=edge.to, val=slack_val))
-
-    return slack_vars
-
-
-class UnboundedError(Exception):
+class DualUnboundedError(Exception):
     """
-    UnboundedError is thrown whenever pivoting the graph is unbounded.
+    DualUnboundedError is thrown whenever pivoting the graph is unbounded.
     """
-
-
-class SimplexState:
-    root: SpanningTreeNode
-    flow_vars: Dict[int, List[FlowEdge]]
-    dual_vars: Dict[int, float]
-    slack_vars: Dict[int, List[SlackEdge]]
-
-    def __init__(
-            self,
-            root: SpanningTreeNode,
-            flow_vars: Dict[int, List[FlowEdge]],
-            dual_vars: Dict[int, float],
-            slack_vars: Dict[int, List[SlackEdge]],
-    ) -> None:
-        self.root = root
-        self.flow_vars = flow_vars
-        self.dual_vars = dual_vars
-        self.slack_vars = slack_vars
 
 
 def dual_pivot(graph: Graph, root: SpanningTreeNode) -> SimplexState:
@@ -338,7 +155,7 @@ def _find_replacing_edge(
             min_edge = (origin, edge)
     
     if min_edge is None:
-        raise UnboundedError(
+        raise DualUnboundedError(
             f"graph is dual unbounded: no opposite edges found for {breaking_origin}-{breaking_edge.dest}",
         )
 
