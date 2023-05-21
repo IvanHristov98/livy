@@ -167,7 +167,7 @@ class TestFindSlackVariables(unittest.TestCase):
 
 class TestDualPivot(unittest.TestCase):
     def test_dual_pivot_on_bounded_graph(self) -> None:
-        # See https://www.youtube.com/watch?v=ife2d0p4dug&t=620s.
+        # See https://youtu.be/ife2d0p4dug?t=3303.
         # Build graph.
         graph = model.Graph()
         # Add nodes from `a` to `h`.
@@ -230,6 +230,27 @@ class TestDualPivot(unittest.TestCase):
         expected_nodes[1].children.append(model.SpanningTreeEdge(to=expected_nodes[4], edge_idx=2))
 
         assert_spanning_trees(self, state.root, expected_nodes[0])
+
+    def test_dual_pivot_on_unbounded_graph(self) -> None:
+        # Build graph.
+        graph = model.Graph()
+        graph.add_node(0, -1)
+        graph.add_node(1, -1)
+        graph.add_node(2, 3)
+
+        graph.add_edge(0, 2, 1)
+        graph.add_edge(1, 2, 2)
+
+        # Build spanning tree that is dual feasible.
+        nodes : List[model.SpanningTreeNode] = [None] * 3
+        for i in range(0, 3):
+            nodes[i] = model.SpanningTreeNode(idx=i, children=[])
+        
+        nodes[0].children.append(model.SpanningTreeEdge(to=nodes[2], edge_idx=0))
+        nodes[2].children.append(model.SpanningTreeEdge(to=nodes[1], edge_idx=1))
+
+        with self.assertRaises(model.DualUnboundedError):
+            model.dual_pivot(graph, nodes[0])
 
 
 def assert_spanning_trees(
