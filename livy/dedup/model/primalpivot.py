@@ -210,6 +210,9 @@ def _find_opposite_edge_with_min_flow(
 
     if min_edge is None and total_cost < 0:
         raise PrimalUnboundedError(f"encountered unbounded cycle {cycle}")
+    
+    if min_edge is None:
+        raise Exception("no opposite flow edges were found during primal pivot")
 
     return min_edge
 
@@ -228,13 +231,6 @@ def _find_unoriented_flow_var(flow_vars: Dict[int, List[FlowEdge]], origin: int,
 
     # Should be considered a programming error.
     raise Exception("non existing flow variable")
-
-
-def _find_flow_var(flow_vars: Dict[int, List[FlowEdge]], origin: int, dest: int) -> int:
-    
-
-    # Should be considered a programming error.
-    raise Exception("flow var not found")
 
 
 def _find_edge(graph: Graph, origin: int, dest: int) -> Edge:

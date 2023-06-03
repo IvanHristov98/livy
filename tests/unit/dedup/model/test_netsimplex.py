@@ -338,7 +338,43 @@ class TestPrimalPivot(unittest.TestCase):
         assert_spanning_trees(self, state.root, expected_nodes[0])
 
     def test_primal_pivot_on_unbounded_graph(self) -> None:
-        pass
+        # See https://youtu.be/zgtY5nGAMgY?t=3147.
+        # Build graph.
+        graph = model.Graph()
+
+        # Add nodes from `a` to `h`.
+        graph.add_node(0, resource=-4) # a
+        graph.add_node(1, resource=2) # b
+        graph.add_node(2, resource=1) # c
+        graph.add_node(3, resource=0) # d
+        graph.add_node(4, resource=-4) # e
+        graph.add_node(5, resource=5) # f
+        graph.add_node(6, resource=-5) # g
+        graph.add_node(7, resource=-1) # h
+        graph.add_node(8, resource=9) # i
+
+        # Add edges.
+        # Bottom triangle.
+        graph.add_edge(origin=0, dest=4, cost=-10)
+        graph.add_edge(origin=1, dest=0, cost=1)
+        graph.add_edge(origin=4, dest=1, cost=8)
+        # Rhomboid.
+        graph.add_edge(origin=4, dest=3, cost=2)
+        graph.add_edge(origin=3, dest=2, cost=4)
+        graph.add_edge(origin=2, dest=1, cost=1)
+        # Trapezoid.
+        graph.add_edge(origin=5, dest=4, cost=2)
+        graph.add_edge(origin=5, dest=8, cost=15)
+        graph.add_edge(origin=3, dest=8, cost=4)
+        # Top triangle.
+        graph.add_edge(origin=6, dest=5, cost=7)
+        graph.add_edge(origin=7, dest=6, cost=2)
+        graph.add_edge(origin=8, dest=7, cost=4)
+
+        root = model.spanning_tree(graph)
+
+        with self.assertRaises(model.PrimalUnboundedError):
+            model.primal_pivot(graph, root)
 
 
 def assert_spanning_trees(
