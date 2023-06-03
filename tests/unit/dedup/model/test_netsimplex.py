@@ -253,6 +253,94 @@ class TestDualPivot(unittest.TestCase):
             model.dual_pivot(graph, nodes[0])
 
 
+class TestPrimalPivot(unittest.TestCase):
+    def test_primal_pivot_on_bounded_graph(self) -> None:
+        # See https://youtu.be/zgtY5nGAMgY?t=3147.
+        # Build graph.
+        graph = model.Graph()
+
+        # Add nodes from `a` to `h`.
+        graph.add_node(0, resource=-4) # a
+        graph.add_node(1, resource=2) # b
+        graph.add_node(2, resource=1) # c
+        graph.add_node(3, resource=0) # d
+        graph.add_node(4, resource=-4) # e
+        graph.add_node(5, resource=5) # f
+        graph.add_node(6, resource=-5) # g
+        graph.add_node(7, resource=-1) # h
+        graph.add_node(8, resource=9) # i
+        graph.add_node(9, resource=7) # j
+        graph.add_node(10, resource=-10) # k
+
+        # bottom
+        graph.add_edge(origin=1, dest=0, cost=1)
+        graph.add_edge(origin=2, dest=0, cost=1)
+        # mid row
+        graph.add_edge(origin=4, dest=5, cost=4)
+        graph.add_edge(origin=4, dest=3, cost=3)
+        # top
+        graph.add_edge(origin=9, dest=8, cost=6)
+        graph.add_edge(origin=10, dest=8, cost=3)
+        # left side
+        graph.add_edge(origin=9, dest=5, cost=1)
+        graph.add_edge(origin=5, dest=1, cost=10)
+        # right side
+        graph.add_edge(origin=3, dest=10, cost=2)
+        graph.add_edge(origin=3, dest=2, cost=2)
+        # bot and mid rows connector
+        graph.add_edge(origin=0, dest=4, cost=5)
+        # big triangle sides
+        graph.add_edge(origin=5, dest=6, cost=3)
+        graph.add_edge(origin=8, dest=7, cost=2)
+        graph.add_edge(origin=6, dest=8, cost=5)
+        graph.add_edge(origin=7, dest=3, cost=1)
+        # reverse small triangle
+        graph.add_edge(origin=4, dest=6, cost=1)
+        graph.add_edge(origin=6, dest=7, cost=1)
+        graph.add_edge(origin=4, dest=7, cost=6)
+        # sidelined small triangle side
+        graph.add_edge(origin=10, dest=7, cost=4)
+
+        # Build spanning tree that is primal feasible.
+        nodes : List[model.SpanningTreeNode] = [None] * 11
+        for i in range(0, 11):
+            nodes[i] = model.SpanningTreeNode(idx=i, children=[])
+
+        nodes[0].children.append(model.SpanningTreeEdge(to=nodes[4], edge_idx=2))
+        nodes[0].children.append(model.SpanningTreeEdge(to=nodes[2], edge_idx=1))
+        nodes[0].children.append(model.SpanningTreeEdge(to=nodes[1], edge_idx=0))
+        nodes[1].children.append(model.SpanningTreeEdge(to=nodes[5], edge_idx=1))
+        nodes[5].children.append(model.SpanningTreeEdge(to=nodes[9], edge_idx=1))
+        nodes[4].children.append(model.SpanningTreeEdge(to=nodes[6], edge_idx=3))
+        nodes[6].children.append(model.SpanningTreeEdge(to=nodes[8], edge_idx=1))
+        nodes[8].children.append(model.SpanningTreeEdge(to=nodes[7], edge_idx=3))
+        nodes[7].children.append(model.SpanningTreeEdge(to=nodes[3], edge_idx=1))
+        nodes[3].children.append(model.SpanningTreeEdge(to=nodes[10], edge_idx=1))
+
+        state = model.primal_pivot(graph, nodes[0])
+
+        # Build expected optimal spanning tree.
+        expected_nodes : List[model.SpanningTreeNode] = [None] * 11
+        for i in range(0, 11):
+            expected_nodes[i] = model.SpanningTreeNode(idx=i, children=[])
+
+        expected_nodes[0].children.append(model.SpanningTreeEdge(to=expected_nodes[4], edge_idx=2))
+        expected_nodes[0].children.append(model.SpanningTreeEdge(to=expected_nodes[1], edge_idx=0))
+        expected_nodes[0].children.append(model.SpanningTreeEdge(to=expected_nodes[2], edge_idx=1))
+        expected_nodes[2].children.append(model.SpanningTreeEdge(to=expected_nodes[3], edge_idx=1))
+        expected_nodes[3].children.append(model.SpanningTreeEdge(to=expected_nodes[10], edge_idx=1))
+        expected_nodes[3].children.append(model.SpanningTreeEdge(to=expected_nodes[7], edge_idx=3))
+        expected_nodes[7].children.append(model.SpanningTreeEdge(to=expected_nodes[8], edge_idx=0))
+        expected_nodes[7].children.append(model.SpanningTreeEdge(to=expected_nodes[6], edge_idx=2))
+        expected_nodes[6].children.append(model.SpanningTreeEdge(to=expected_nodes[5], edge_idx=0))
+        expected_nodes[5].children.append(model.SpanningTreeEdge(to=expected_nodes[9], edge_idx=1))
+
+        assert_spanning_trees(self, state.root, expected_nodes[0])
+
+    def test_primal_pivot_on_unbounded_graph(self) -> None:
+        pass
+
+
 def assert_spanning_trees(
     case: unittest.TestCase, 
     root: model.SpanningTreeNode, 
@@ -260,10 +348,18 @@ def assert_spanning_trees(
 ) -> None:
     case.assertEqual(root.idx, other_root.idx)
     case.assertEqual(len(root.children), len(other_root.children))
+    matchedIdxCount = 0
 
     for i in range(len(root.children)):
-        case.assertEqual(root.children[i].edge_idx, other_root.children[i].edge_idx)
-        assert_spanning_trees(case, root.children[i].to, other_root.children[i].to)
+        for j in range(len(other_root.children)):
+            if root.children[i].to.idx == other_root.children[j].to.idx:
+                case.assertEqual(root.children[i].edge_idx, other_root.children[j].edge_idx)
+                assert_spanning_trees(case, root.children[i].to, other_root.children[j].to)
+
+                matchedIdxCount += 1
+                break
+
+    case.assertEqual(matchedIdxCount, len(root.children))
 
 
 def bipartite_unidirectional_graph() -> model.Graph:

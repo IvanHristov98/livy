@@ -24,3 +24,7 @@ from livy.dedup.model.dualpivot import (
     dual_pivot,
     DualUnboundedError,
 )
+from livy.dedup.model.primalpivot import (
+    primal_pivot,
+    PrimalUnboundedError,
+)
