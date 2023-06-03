@@ -338,20 +338,19 @@ class TestPrimalPivot(unittest.TestCase):
         assert_spanning_trees(self, state.root, expected_nodes[0])
 
     def test_primal_pivot_on_unbounded_graph(self) -> None:
-        # See https://youtu.be/zgtY5nGAMgY?t=3147.
         # Build graph.
         graph = model.Graph()
 
         # Add nodes from `a` to `h`.
-        graph.add_node(0, resource=-4) # a
-        graph.add_node(1, resource=2) # b
-        graph.add_node(2, resource=1) # c
-        graph.add_node(3, resource=0) # d
-        graph.add_node(4, resource=-4) # e
-        graph.add_node(5, resource=5) # f
-        graph.add_node(6, resource=-5) # g
-        graph.add_node(7, resource=-1) # h
-        graph.add_node(8, resource=9) # i
+        graph.add_node(0, resource=-6) # a
+        graph.add_node(1, resource=-6) # b
+        graph.add_node(2, resource=0) # c
+        graph.add_node(3, resource=3) # d
+        graph.add_node(4, resource=6) # e
+        graph.add_node(5, resource=-2) # f
+        graph.add_node(6, resource=10) # g
+        graph.add_node(7, resource=-6) # h
+        graph.add_node(8, resource=1) # i
 
         # Add edges.
         # Bottom triangle.
@@ -375,6 +374,64 @@ class TestPrimalPivot(unittest.TestCase):
 
         with self.assertRaises(model.PrimalUnboundedError):
             model.primal_pivot(graph, root)
+
+
+class TestNetworkSimplex(unittest.TestCase):
+    def test_with_complex_graph(self) -> None:
+        # See https://youtu.be/ife2d0p4dug
+        graph = model.Graph()
+
+        # Add nodes.
+        graph.add_node(0, resource=-3) # a
+        graph.add_node(1, resource=-5) # b
+        graph.add_node(2, resource=-3) # c
+        graph.add_node(3, resource=4) # d
+        graph.add_node(4, resource=10) # e
+        graph.add_node(5, resource=3) # f
+        graph.add_node(6, resource=-2) # g
+        graph.add_node(7, resource=-4) # h
+        graph.add_node(8, resource=-1) # i
+        graph.add_node(9, resource=1) # j
+
+        # Sides
+        graph.add_edge(origin=0, dest=6, cost=5)
+        graph.add_edge(origin=6, dest=7, cost=2)
+        graph.add_edge(origin=7, dest=8, cost=2)
+        graph.add_edge(origin=8, dest=9, cost=2)
+        graph.add_edge(origin=3, dest=9, cost=9)
+        graph.add_edge(origin=1, dest=0, cost=10)
+        graph.add_edge(origin=2, dest=1, cost=2)
+        graph.add_edge(origin=2, dest=3, cost=10)
+        # Bottom triangle
+        graph.add_edge(origin=4, dest=0, cost=12)
+        graph.add_edge(origin=1, dest=4, cost=10)
+        graph.add_edge(origin=4, dest=2, cost=11)
+        # Parallelogram
+        graph.add_edge(origin=5, dest=4, cost=5)
+        graph.add_edge(origin=3, dest=5, cost=5)
+        # Top triangle.
+        graph.add_edge(origin=7, dest=5, cost=1)
+        graph.add_edge(origin=5, dest=8, cost=2)
+        graph.add_edge(origin=9, dest=5, cost=1)
+
+        state = model.network_simplex(graph)
+
+        # Build expected optimal spanning tree.
+        expected_nodes : List[model.SpanningTreeNode] = [None] * 11
+        for i in range(0, 10):
+            expected_nodes[i] = model.SpanningTreeNode(idx=i, children=[])
+
+        expected_nodes[0].children.append(model.SpanningTreeEdge(to=expected_nodes[6], edge_idx=0))
+        expected_nodes[0].children.append(model.SpanningTreeEdge(to=expected_nodes[4], edge_idx=2))
+        expected_nodes[6].children.append(model.SpanningTreeEdge(to=expected_nodes[7], edge_idx=1))
+        expected_nodes[4].children.append(model.SpanningTreeEdge(to=expected_nodes[2], edge_idx=2))
+        expected_nodes[4].children.append(model.SpanningTreeEdge(to=expected_nodes[5], edge_idx=3))
+        expected_nodes[2].children.append(model.SpanningTreeEdge(to=expected_nodes[1], edge_idx=0))
+        expected_nodes[5].children.append(model.SpanningTreeEdge(to=expected_nodes[8], edge_idx=3))
+        expected_nodes[5].children.append(model.SpanningTreeEdge(to=expected_nodes[9], edge_idx=4))
+        expected_nodes[5].children.append(model.SpanningTreeEdge(to=expected_nodes[3], edge_idx=1))
+
+        assert_spanning_trees(self, state.root, expected_nodes[0])
 
 
 def assert_spanning_trees(

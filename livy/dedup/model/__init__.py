@@ -2,6 +2,7 @@ from livy.dedup.model.graph import (
     Node,
     Edge,
     Graph,
+    copy_graph_with_zero_costs,
 )
 from livy.dedup.model.spanningtree import (
     spanning_tree,
@@ -27,4 +28,7 @@ from livy.dedup.model.dualpivot import (
 from livy.dedup.model.primalpivot import (
     primal_pivot,
     PrimalUnboundedError,
+)
+from livy.dedup.model.networksimplex import (
+    network_simplex,
 )

@@ -50,3 +50,18 @@ class SpanningTreeNode:
     def __init__(self, idx: int, children: List[SpanningTreeEdge]) -> None:
         self.idx = idx
         self.children = children
+
+
+def copy_graph_with_zero_costs(graph: Graph) -> Graph:
+    free_graph = Graph()
+
+    for origin in graph.nodes.keys():
+        free_graph.add_node(origin, resource=graph.nodes[origin].resource)
+
+    for origin in graph.adj_list.keys():
+        free_graph.adj_list[origin] = []
+
+        for edge in graph.adj_list[origin]:
+            free_graph.adj_list[origin].append(edge)
+
+    return free_graph
