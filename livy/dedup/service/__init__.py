@@ -3,3 +3,5 @@ from livy.dedup.service.service import (
     Extractor, # noqa
 )
 from livy.dedup.service.bruteforce import BruteForceService # noqa
+from livy.dedup.service.signature import SignatureService # noqa
+

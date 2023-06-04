@@ -1,16 +1,15 @@
 import abc
-from typing import Tuple, List, Dict, NamedTuple
+from typing import List
 
 import numpy as np
-import cv2 as cv
 
 import livy.id as id
 import livy.model as model
 
 
 class Extractor(abc.ABC):
-    # features returns a tuple keypoints and a descriptor for an image.
-    def features(self, im: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    # features returns an array of k 1xn-dimensional features for an image.
+    def features(self, im: np.ndarray) -> np.ndarray:
         raise NotImplementedError("descriptor is not implemented")
 
 

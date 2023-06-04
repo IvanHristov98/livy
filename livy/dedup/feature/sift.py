@@ -1,9 +1,9 @@
-import livy.dedup.service as service
+from typing import Tuple
 
 import numpy as np
 import cv2 as cv
 
-from typing import Tuple
+import livy.dedup.service as service
 
 
 class SIFTExtractor(service.Extractor):
@@ -12,12 +12,12 @@ class SIFTExtractor(service.Extractor):
     def __init__(self) -> None:
         self._sift = cv.SIFT_create()
 
-    def features(self, im: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def features(self, im: np.ndarray) -> np.ndarray:
         im_gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
    
-        keypoints, des = self._sift.detectAndCompute(im_gray, None)
+        _, des = self._sift.detectAndCompute(im_gray, None)
 
         # im = cv.drawKeypoints(im_gray, kp, im, flags=cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
         # cv.imwrite("sift_kpts.jpg", im)
 
-        return keypoints, des
+        return des

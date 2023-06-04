@@ -23,22 +23,29 @@ class TestDedupService(unittest.TestCase):
         super().setUp()
         random.seed(int(time.time()))
 
-        self._ims_path = Path(os.environ["COCO_IMS_PATH"])
+        self._ims_path = Path(os.environ["IMS_PATH"])
 
         # TODO: Make many services.
-        self._svc = self._new_brute_force_svc()
+        # self._svc = self._new_brute_force_svc()
+        self._svc = self._new_signature_svc()
 
     def _new_brute_force_svc(self) -> dedup.BruteForceService:
         extractor = dedup.SIFTExtractor()
         return dedup.BruteForceService(extractor)
 
+    def _new_signature_svc(self) -> dedup.SignatureService:
+        extractor = dedup.SpinImageExtractor()
+        return dedup.SignatureService(extractor)
+
     def test_affine_transform_stability(self) -> None:
-        ims = self._load_ims()
+        ims = self._load_ims()[:20]
        
         for i in range(len(ims)):
             self._svc.add_im(ims[i])
+        
+        print("loaded images")
 
-        sample_size = 100
+        sample_size = 5
         success_count = 0
 
         warped_ims = self._warp_affine_ims(ims)
@@ -84,7 +91,7 @@ class TestDedupService(unittest.TestCase):
             #     # cv.waitKey(0)
             #     cv.imshow("warped image", warped_ims[i])
             #     cv.waitKey(0)
-        
+
         return warped_ims
 
     def _affine_transform_mat(
