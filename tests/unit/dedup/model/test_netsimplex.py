@@ -432,6 +432,7 @@ class TestNetworkSimplex(unittest.TestCase):
         expected_nodes[5].children.append(model.SpanningTreeEdge(to=expected_nodes[3], edge_idx=1))
 
         assert_spanning_trees(self, state.root, expected_nodes[0])
+        self.assertAlmostEqual(model.total_cost(graph, state), 302, 10)
 
 
 def assert_spanning_trees(

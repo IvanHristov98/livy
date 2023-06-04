@@ -41,3 +41,19 @@ def assign_flow_values(graph: Graph, root: SpanningTreeNode) -> Dict[int, List[F
 
     _aux_assign_flow_values(root)
     return flows
+
+
+# The provided arc is oriented.
+def find_unoriented_flow_var(flow_vars: Dict[int, List[FlowEdge]], origin: int, dest: int) -> int:
+    if origin in flow_vars:
+        for flow_edge in flow_vars[origin]:
+            if flow_edge.dest == dest:
+                return flow_edge.val
+
+    if dest in flow_vars:
+        for flow_edge in flow_vars[dest]:
+            if flow_edge.dest == origin:
+                return flow_edge.val
+
+    # Should be considered a programming error.
+    raise Exception("non existing flow variable")

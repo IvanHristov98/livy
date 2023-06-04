@@ -12,6 +12,7 @@ from livy.dedup.model.spanningtree import (
 from livy.dedup.model.flow import (
     FlowEdge,
     assign_flow_values,
+    find_unoriented_flow_var,
 )
 from livy.dedup.model.dual import (
     assign_dual_variables,
@@ -31,4 +32,5 @@ from livy.dedup.model.primalpivot import (
 )
 from livy.dedup.model.networksimplex import (
     network_simplex,
+    total_cost,
 )

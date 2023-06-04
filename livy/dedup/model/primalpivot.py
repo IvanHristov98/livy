@@ -3,7 +3,7 @@ from typing import Dict, Set, List, Tuple
 from livy.dedup.model.graph import Graph, Edge
 from livy.dedup.model.spanningtree import SpanningTreeNode, SpanningTreeEdge
 from livy.dedup.model.state import SimplexState
-from livy.dedup.model.flow import assign_flow_values, FlowEdge
+from livy.dedup.model.flow import assign_flow_values, FlowEdge, find_unoriented_flow_var
 from livy.dedup.model.dual import (
     assign_dual_variables, 
     find_slack_variables,
@@ -199,7 +199,7 @@ def _find_opposite_edge_with_min_flow(
         if (origin == new_edge[0] and dest == new_edge[1]) or (origin == new_edge[1] and dest == new_edge[0]):
             continue
 
-        flow_val = _find_unoriented_flow_var(flow_vars, origin, dest)
+        flow_val = find_unoriented_flow_var(flow_vars, origin, dest)
         edge = _find_edge(graph, origin, dest)
 
         if edge.strong == should_be_strong and (min_edge is None or min_flow_val > flow_val):
@@ -215,22 +215,6 @@ def _find_opposite_edge_with_min_flow(
         raise Exception("no opposite flow edges were found during primal pivot")
 
     return min_edge
-
-
-# The provided arc is oriented.
-def _find_unoriented_flow_var(flow_vars: Dict[int, List[FlowEdge]], origin: int, dest: int) -> int:
-    if origin in flow_vars:
-        for flow_edge in flow_vars[origin]:
-            if flow_edge.dest == dest:
-                return flow_edge.val
-
-    if dest in flow_vars:
-        for flow_edge in flow_vars[dest]:
-            if flow_edge.dest == origin:
-                return flow_edge.val
-
-    # Should be considered a programming error.
-    raise Exception("non existing flow variable")
 
 
 def _find_edge(graph: Graph, origin: int, dest: int) -> Edge:
