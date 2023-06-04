@@ -38,6 +38,8 @@ class SignatureService(service.Service):
         self._credits = credits
 
     def add_im(self, im: model.Image) -> id.Image:
+        print(f"loaded image {im.id}")
+
         weighted_medoids = self._signature(im)
 
         self._signatures[im.id] = weighted_medoids
@@ -49,11 +51,41 @@ class SignatureService(service.Service):
     def similar_ims(self, im: model.Image, n: int) -> List[id.Image]:
         signature = self._signature(im)
 
-        for im_id in self._signatures.keys():
-            other_signature = self._signatures[im_id]
+        class Score(NamedTuple):
+            id: id.Image
+            score: float
+
+        top_ims: List[Score] = []
+
+        for i in range(n+1):
+            top_ims.append(Score(id=id.NoImage, score=0.0))
+
+        for other_im_id in self._signatures.keys():
+            other_signature = self._signatures[other_im_id]
 
             graph = self._build_graph(signature, other_signature)
-            simplex_state = dedupmodel.network_simplex(graph)
+            try:
+                simplex_state = dedupmodel.network_simplex(graph)
+                cost = dedupmodel.total_cost(graph, simplex_state)
+            except Exception as e:
+                print(f"Exception encountered for comparison between {other_im_id} and {im.id}: {str(e)}; Skipping;")
+                continue
+
+            # The bigger the cost the further the image is.
+            # Hence a invert is necessary.
+            score = 1/cost
+
+            top_ims[n] = Score(id=other_im_id, score=score)
+
+            # An insert sort is used to order small number of items fast.
+            # Other sorts would be slow.
+            for i in range(n-1, -1, -1):
+                if top_ims[i].score > score:
+                    break
+
+                top_ims[i+1], top_ims[i] = top_ims[i], top_ims[i+1]
+
+        return top_ims[:n]
 
     # The sum of weights of all weighted medoids should approximate 1.
     def _signature(self, im: model.Image) -> List[WeightedMedoid]:
@@ -132,7 +164,7 @@ class SignatureService(service.Service):
             idx += 1
 
         for medoid in demanding_medoids:
-            graph.add_node(idx, resource=medoid.weight)
+            graph.add_node(idx, resource=-medoid.weight)
 
             for k in range(len(supplying_medoids)):
                 supplying_medoid = supplying_medoids[k]

@@ -17,6 +17,12 @@ class PrimalUnboundedError(Exception):
     """
 
 
+class CycleNotDetected(Exception):
+    """
+    Thrown when a cycle is not found. This error shouldn't occur.
+    """
+
+
 def primal_pivot(graph: Graph, root: SpanningTreeNode) -> SimplexState:
     tree_adj_list = _spanning_tree_to_weak_adj_list(root)
     flow_vars = assign_flow_values(graph, root)
@@ -165,6 +171,10 @@ def _find_added_cycle(tree_adj_list: Dict[int, Set[int]], start: int) -> List[in
         path.pop()
 
     _detect_cycle(start)
+    if len(cycle) == 0:
+        # This error shouldn't occur.
+        raise CycleNotDetected(f"fatal error: cycle not detected in {tree_adj_list} from {start}")
+
     return cycle
 
 

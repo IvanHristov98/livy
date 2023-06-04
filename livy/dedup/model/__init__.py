@@ -29,6 +29,7 @@ from livy.dedup.model.dualpivot import (
 from livy.dedup.model.primalpivot import (
     primal_pivot,
     PrimalUnboundedError,
+    CycleNotDetected,
 )
 from livy.dedup.model.networksimplex import (
     network_simplex,
