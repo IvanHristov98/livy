@@ -55,7 +55,7 @@ class BruteForceService(service.Service):
         self._store = store
 
     def add_im(self, im: model.Image) -> id.Image:
-        _, descriptor = self._extractor.features(im.mat)
+        descriptor = self._extractor.features(im.mat)
 
         self._store.add(Image(im, descriptor))
         return im.id

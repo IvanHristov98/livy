@@ -27,7 +27,10 @@ class ImageIterator(bruteforce.ImageIterator):
 
     def __init__(self, store: ImageStore) -> None:
         super().__init__()
-        self._ims = store._ims.values()
+        self._ims = []
+        for im in store._ims.values():
+            self._ims.append(im)
+
         self._curr_idx = -1
 
     def next(self) -> bool:
