@@ -11,6 +11,9 @@ class Image(NamedTuple):
     def __eq__(self, other: "Image"):
         return self.id == other.id
 
+    def __str__(self) -> str:
+        return str(self.id)
+
 
 NoImage = Image(id=uuid.UUID(int=0))
 
