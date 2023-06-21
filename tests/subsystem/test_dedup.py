@@ -13,6 +13,7 @@ import cv2 as cv
 import livy.dedup as dedup
 import livy.model as model
 import livy.id as id
+import livy.dedup.store.inmem.bruteforce as bruteforcestore
 
 
 class TestDedupService(unittest.TestCase):
@@ -26,12 +27,13 @@ class TestDedupService(unittest.TestCase):
         self._ims_path = Path(os.environ["IMS_PATH"])
 
         # TODO: Make many services.
-        # self._svc = self._new_brute_force_svc()
-        self._svc = self._new_signature_svc()
+        self._svc = self._new_brute_force_svc()
+        # self._svc = self._new_signature_svc()
 
     def _new_brute_force_svc(self) -> dedup.BruteForceService:
         extractor = dedup.SIFTExtractor()
-        return dedup.BruteForceService(extractor)
+        store = bruteforcestore.ImageStore()
+        return dedup.BruteForceService(extractor, store)
 
     def _new_signature_svc(self) -> dedup.SignatureService:
         extractor = dedup.SpinImageExtractor()
