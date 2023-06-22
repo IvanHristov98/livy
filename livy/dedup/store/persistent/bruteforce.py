@@ -7,6 +7,7 @@ import cv2 as cv
 import numpy as np
 
 import livy.dedup.service.bruteforce as bruteforce
+import livy.model as model
 import livy.id as id
 
 
@@ -22,10 +23,16 @@ class ImageStore(bruteforce.ImageStore):
 
     def add(self, im: bruteforce.Image) -> None:
         cv.imwrite(_im_path(self._vol, im.im.id), im.im.mat)
-        im.descriptor.tofile(_descriptor_path(self._vol, im.im.id))
+        np.save(_descriptor_path(self._vol, im.im.id), im.descriptor)
 
-    def im(self, im_id: id.Image) -> bruteforce.Image:
-        return _read_im(self._vol, im_id)
+    def im(self, im_id: id.Image) -> model.Image:
+        if not os.path.exists(_im_path(self._vol, im_id)):
+            raise bruteforce.ImageNotFound(f"failed finding image for {str(im_id)}")
+
+        mat = cv.imread(_im_path(self._vol, im_id))
+
+        # TODO: Add retention of names.
+        return model.Image(im_id, "", mat)
 
     def iterator(self) -> bruteforce.ImageIterator:
         return ImageIterator(self)
@@ -49,7 +56,7 @@ class ImageIterator(bruteforce.ImageIterator):
                 raw_im_id = im_name.split(".")[0]
                 im_id = uuid.UUID(raw_im_id)
 
-                self._im_ids.append(im_id)                
+                self._im_ids.append(im_id)
 
         self._curr_idx = -1
 
@@ -61,17 +68,14 @@ class ImageIterator(bruteforce.ImageIterator):
         return True
 
     def curr(self) -> bruteforce.Image:
-        return _read_im(self._vol, self._im_ids[self._curr_idx])
+        if not os.path.exists(_im_path(self._vol, self._im_ids[self._curr_idx])):
+            raise bruteforce.ImageNotFound(f"failed finding image for {str(self._im_ids[self._curr_idx])}")
 
+        mat = cv.imread(_im_path(self._vol, self._im_ids[self._curr_idx]))
+        descriptor = np.load(_descriptor_path(self._vol, self._im_ids[self._curr_idx]))
 
-def _read_im(vol: Path, im_id: id.Image) -> bruteforce.Image:
-    if not os.path.exists(_im_path(vol, im_id)):
-        raise bruteforce.ImageNotFound(f"failed finding image for {str(im_id)}")
-
-    mat = cv.imread(_im_path(vol, im_id))
-    descriptor = np.fromfile(_descriptor_path(vol, im_id))
-
-    return bruteforce.Image(im=mat, descriptor=descriptor)
+        # TODO: Add retention of names.
+        return bruteforce.Image(im=model.Image(self._im_ids[self._curr_idx], "", mat), descriptor=descriptor)
 
 
 def _im_path(vol: Path, im_id: id.Image) -> str:
@@ -83,7 +87,7 @@ def _im_volume(vol: Path) -> Path:
 
 
 def _descriptor_path(vol: Path, im_id: id.Image) -> str:
-    return os.path.join(str(_descriptor_vol(vol)), f"{str(im_id)}.descriptor")
+    return os.path.join(str(_descriptor_vol(vol)), f"{str(im_id)}.npy")
 
 
 def _descriptor_vol(vol: Path) -> Path:
