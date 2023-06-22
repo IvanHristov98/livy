@@ -32,7 +32,7 @@ class ImageStore(abc.ABC):
     def add(self, im: Image) -> None:
         raise NotImplementedError("add is not implemented")
 
-    def im(self, im_id: id.Image) -> Image:
+    def im(self, im_id: id.Image) -> model.Image:
         raise NotImplementedError("im is not implemented")
 
     def iterator(self) -> ImageIterator:

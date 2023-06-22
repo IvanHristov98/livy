@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, UploadFile, HTTPException
+from fastapi import APIRouter, status, UploadFile, HTTPException, Response
 from typing import List
 from pydantic import BaseModel
 import uuid
@@ -36,7 +36,7 @@ class TopNResponse(BaseModel):
 @router.post("/topn", status_code=status.HTTP_200_OK, response_model=TopNResponse)
 async def topn(img: UploadFile, n: int = 5):
     try:
-        svc = deps.dedup_svc 
+        svc = deps.dedup_svc
 
         mat = await read_img(img)
         im_id = id.NewImage()
@@ -49,6 +49,29 @@ async def topn(img: UploadFile, n: int = 5):
             uuids.append(str(im_id))
 
         return TopNResponse(im_ids=uuids)
+    except Exception as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=str(e))
+    
+
+# See https://stackoverflow.com/a/67497103.
+@router.get(
+    "/image/{raw_im_id}",
+    responses = {
+        200: {
+            "content": {"image/jpg": {}}
+        }
+    },
+    response_class=Response
+)
+def get_image(raw_im_id: str):
+    try:
+        svc = deps.dedup_svc
+
+        im_id = id.Image(uuid.UUID(raw_im_id))
+        im = svc.im(im_id)
+
+        buf = cv.imencode(".jpg", im.mat)[1].tobytes()
+        return Response(content=buf, media_type="image/jpg")
     except Exception as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=str(e))
 
