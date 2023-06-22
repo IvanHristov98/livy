@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> 
+
+    <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+    <div class="jumbotron text-center memphis-bg">
+        <img src="img/livy_logo.png" alt="Livy logo">
+      </div>
+    <div class="container">
+        <div class="col-sm-4">
+            <form id="add-form" class="row g-3" method="post" enctype="multipart/form-data" action="http://localhost:8000/api/dedup/add">
+                <h3>Добавяне на изображение</h3>
+                <div class="mb-3">
+                    <label for="formFile" class="form-label">Изображение</label>
+                    <input name="img" class="form-control" type="file" id="formFile">
+                </div>
+                <div class="form-group">
+                    <label for="exampleInputEmail1">Име на изображение</label>
+                    <input name="name" class="form-control" placeholder="Въведи име на изображението...">
+                  </div>
+                <button type="submit" id="add-img" class="btn btn-primary">Добави</button>
+            </form>
+            <hr>
+            <form id="topn-form" class="row g-3" method="post" enctype="multipart/form-data" action="http://localhost:8000/api/dedup/topn">
+                <h3>Подобни изображения</h3>
+                <div class="mb-3">
+                    <label for="formFile" class="form-label">Изображение</label>
+                    <input id="topn-img" name="img" class="form-control" type="file" id="formFile">
+                </div>
+                <div class="form-group">
+                    <label for="exampleInputEmail1">Брой</label>
+                    <input name="n" id="topn-count" class="form-control" placeholder="Въведи брой на най-близките изображения...">
+                  </div>
+                <button type="submit" id="topn-submit" class="btn btn-primary">Търси</button>
+            </form>
+        </div>
+        <div class="col-sm-2"></div>
+        <div class="col-sm-6 dark-bg">
+            <div class="container-fluid">
+                <div id="top-n-ims" class="row">
+                    <!-- <div class="col-sm-6">
+                        <h3>Column 2</h3>
+                        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit...Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris...</p>
+                    </div>
+                    <div class="col-sm-6">
+                        <h3>Column 2</h3>
+                        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit...Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris...</p>
+                    </div> -->
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="controller.js"></script>
+</body>
+</html>

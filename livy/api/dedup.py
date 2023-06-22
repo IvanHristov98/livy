@@ -1,5 +1,5 @@
-from fastapi import APIRouter, status, UploadFile, HTTPException, Response
-from typing import List
+from fastapi import APIRouter, status, UploadFile, HTTPException, Response, Form
+from typing import List, Annotated
 from pydantic import BaseModel
 import uuid
 
@@ -15,8 +15,8 @@ router = APIRouter(prefix="/api/dedup")
 deps = depinjection.dependencies()
 
 
-@router.post("/add/{name}", status_code=status.HTTP_201_CREATED)
-async def add(name: str, img: UploadFile):
+@router.post("/add", status_code=status.HTTP_201_CREATED)
+async def add(name: Annotated[str, Form()], img: UploadFile):
     try:
         svc = deps.dedup_svc
 
@@ -34,7 +34,7 @@ class TopNResponse(BaseModel):
 
 
 @router.post("/topn", status_code=status.HTTP_200_OK, response_model=TopNResponse)
-async def topn(img: UploadFile, n: int = 5):
+async def topn(img: UploadFile, n: Annotated[int, Form()] = 5):
     try:
         svc = deps.dedup_svc
 

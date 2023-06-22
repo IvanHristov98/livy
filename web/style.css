@@ -1,0 +1,14 @@
+.dark-bg{
+    background-color: rgb(240, 240, 240);
+}
+
+.memphis-bg{
+    background-image: url("./img/memphis-mini-dark.png");
+}
+
+.im-box{
+    background-size: cover;
+    background-position: center;
+    padding: 10px;
+    height: 250px;
+}
