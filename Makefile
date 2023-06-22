@@ -13,6 +13,12 @@ install-deps:
 run:
 	@(cmd/utility/run_in_common_venv.sh "cmd" "dedup/dedup.py")
 
+.PHONY: serve
+serve:
+	DEDUP_VOLUME="$(PWD)/tmp" \
+	DEDUP_STRATEGY="sift_and_knn" \
+		uvicorn cmd.server.main:app --reload
+
 .PHONY: test-subsystem
 test-subsystem:
 	@(cmd/utility/run_in_common_venv.sh "." "-m" "unittest" "discover" "tests/subsystem")
