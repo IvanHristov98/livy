@@ -70,10 +70,10 @@ class BruteForceService(service.Service):
             id: id.Image
             score: float
 
-        top_ims: List[Score] = []
+        top_scores: List[Score] = []
 
         for i in range(n+1):
-            top_ims.append(Score(id=id.NoImage, score=0.0))
+            top_scores.append(Score(id=id.NoImage, score=0.0))
 
         store_iter = self._store.iterator()
 
@@ -81,15 +81,20 @@ class BruteForceService(service.Service):
             other_im = store_iter.curr()
 
             score = self._match_score(descriptor, other_im.descriptor)
-            top_ims[n] = Score(id=other_im.im.id, score=score)
+            top_scores[n] = Score(id=other_im.im.id, score=score)
 
             # An insert sort is used to order small number of items fast.
             # Other sorts would be slow.
             for i in range(n-1, -1, -1):
-                if top_ims[i].score > score:
+                if top_scores[i].score > score:
                     break
 
-                top_ims[i+1], top_ims[i] = top_ims[i], top_ims[i+1]
+                top_scores[i+1], top_scores[i] = top_scores[i], top_scores[i+1]
+    
+        top_ims: List[id.Image] = []
+
+        for score in top_scores:
+            top_ims.append(score.id)
 
         return top_ims[:n]
 
