@@ -1,28 +1,28 @@
 from typing import Dict, List
 
-import livy.dedup.service.bruteforce as bruteforce
+import livy.dedup.service.siftknn as siftknn
 import livy.id as id
 
 
-class ImageStore(bruteforce.ImageStore):
-    _ims: Dict[id.Image, bruteforce.Image]
+class ImageStore(siftknn.ImageStore):
+    _ims: Dict[id.Image, siftknn.Image]
 
     def __init__(self) -> None:
         super().__init__()
         self._ims = dict()
 
-    def add(self, im: bruteforce.Image) -> None:
+    def add(self, im: siftknn.Image) -> None:
         self._ims[im.im.id] = im
 
-    def im(self, im_id: id.Image) -> bruteforce.Image:
+    def im(self, im_id: id.Image) -> siftknn.Image:
         return self._ims[im_id]
 
-    def iterator(self) -> bruteforce.ImageIterator:
+    def iterator(self) -> siftknn.ImageIterator:
         return ImageIterator(self)
 
 
-class ImageIterator(bruteforce.ImageIterator):
-    _ims: List[bruteforce.Image]
+class ImageIterator(siftknn.ImageIterator):
+    _ims: List[siftknn.Image]
     _curr_idx: int
 
     def __init__(self, store: ImageStore) -> None:
@@ -40,5 +40,5 @@ class ImageIterator(bruteforce.ImageIterator):
         self._curr_idx += 1
         return True
 
-    def curr(self) -> bruteforce.Image:
+    def curr(self) -> siftknn.Image:
         return self._ims[self._curr_idx]

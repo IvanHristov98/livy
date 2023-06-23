@@ -13,7 +13,7 @@ import cv2 as cv
 import livy.dedup as dedup
 import livy.model as model
 import livy.id as id
-import livy.dedup.store.inmem.bruteforce as bruteforcestore
+import livy.dedup.store.inmem.siftknn as bruteforcestore
 
 
 class TestDedupService(unittest.TestCase):

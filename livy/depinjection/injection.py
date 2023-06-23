@@ -2,7 +2,7 @@ from functools import lru_cache
 from typing import NamedTuple
 
 import livy.depinjection.config as config
-import livy.dedup.store.persistent.bruteforce as bruteforcestore
+import livy.dedup.store.persistent.siftknn as bruteforcestore
 import livy.dedup.feature as dedupfeature
 import livy.dedup.service as dedupservice
 
