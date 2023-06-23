@@ -13,7 +13,7 @@ import cv2 as cv
 import livy.dedup as dedup
 import livy.model as model
 import livy.id as id
-import livy.dedup.store.inmem.bruteforce as bruteforcestore
+import livy.dedup.store.inmem.siftknn as bruteforcestore
 
 
 class TestDedupService(unittest.TestCase):
@@ -27,8 +27,8 @@ class TestDedupService(unittest.TestCase):
         self._ims_path = Path(os.environ["IMS_PATH"])
 
         # TODO: Make many services.
-        self._svc = self._new_brute_force_svc()
-        # self._svc = self._new_signature_svc()
+        # self._svc = self._new_brute_force_svc()
+        self._svc = self._new_signature_svc()
 
     def _new_brute_force_svc(self) -> dedup.BruteForceService:
         extractor = dedup.SIFTExtractor()
@@ -40,21 +40,23 @@ class TestDedupService(unittest.TestCase):
         return dedup.SignatureService(extractor)
 
     def test_affine_transform_stability(self) -> None:
-        ims = self._load_ims()[:20]
+        ims = self._load_ims()[:1000]
        
         for i in range(len(ims)):
+            print(i)
             self._svc.add_im(ims[i])
         
         print("loaded images")
 
-        sample_size = 5
+        sample_size = 100
         success_count = 0
 
         warped_ims = self._warp_affine_ims(ims)
         
         for i in range(sample_size):
+            print("checking for image", i)
             idx = random.randrange(0, len(warped_ims))
-            similar_ims = self._svc.similar_ims(warped_ims[idx], n=5)
+            similar_ims = self._svc.similar_ims(warped_ims[idx], n=20)
 
             for similar_im in similar_ims:
                 if similar_im.id == ims[idx].id:
